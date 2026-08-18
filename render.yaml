@@ -1,0 +1,45 @@
+services:
+  - type: worker
+    name: discord-community-bot
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/index.js
+    autoDeploy: true
+
+    # A background worker is the correct service type for this bot: it holds
+    # a persistent outbound WebSocket connection to Discord's gateway and
+    # never needs to receive inbound HTTP traffic, so there's no free-tier
+    # web service to spin down/up here — Render's free tier doesn't cover
+    # background workers at all (see README "Deploying to Render").
+    disk:
+      name: bot-data
+      mountPath: /data
+      sizeGB: 1
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_FILE
+        value: /data/bot.sqlite3
+      - key: ENABLE_MESSAGE_CONTENT_FEATURES
+        value: "false"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5
+      # Secrets: left blank here on purpose. Render's Blueprint deploy flow
+      # will prompt you to fill these in in the dashboard rather than storing
+      # them in this file / your git history.
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_DEV_GUILD_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
